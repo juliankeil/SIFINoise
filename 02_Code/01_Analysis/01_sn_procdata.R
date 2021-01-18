@@ -36,14 +36,44 @@ exp_catch <- which(VP_checks[exp_sel,] == "zero", arr.ind = TRUE)
 
 VP_data[exp_catch[2]] <- NULL
 
-## 4. Exclude based on poor performance in control blocks -> more than 1/3 errors
+## 4. Exclusion based on performance
+# First remove non-responders -> missed more than 1/3 of trials
+excl_vec_nr <- NULL
+nr <- NULL
+for (i in 1:length(VP_data)) {
+	nr[i] <- 0
+	nr[i] <- sum(VP_data[i][[1]][[1]]$Response_noiselevel == "")
+	if ( nr[i] > length(VP_data[i][[1]][[1]]$Response_noiselevel)/3) {
+		excl_vec_nr <- c(excl_vec_nr,i)
+	} # If loop
+	
+	} # For loop
+	
+VP_data[excl_vec_nr] <- NULL
+
+# Then remove bad trials
+# No response
+# Response too early (<100ms)
+# Response too late (>1700ms)
+for(i in 1:length(VP_data)) {
+	
+	# No response
+	VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Response_noiselevel != "",]
+	# Fast response
+	VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Value_noiselevel >= 100,]
+	# Slow response
+	VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Value_noiselevel <= 1700,]
+	
+	} # for loop
+
+# 4.1 Exclude based on poor performance in control blocks -> more than 1/3 errors
 excl_vec_cb <- NULL
 comp <- NULL
 for(i in 1:length(VP_data)) {
 	
 	blocks <- which(VP_data[i][[1]][[1]]$Block_noiselevel == 'Kontrollblock loop +noise+')
 	stim <- as.numeric(substring(VP_data[i][[1]][[1]]$Label_noiselevel[blocks],2,2))
-	resp <- as.numeric(VP_data[i][[1]][[1]]$Response_noiselevel[blocks])-2 # somehow adds 2
+	resp <- as.numeric(as.character.factor(VP_data[i][[1]][[1]]$Response_noiselevel[blocks]))
 	comp[i] <- sum(stim != resp)
 	
 		if (comp[i]/(length(stim)) > 0.34) {
@@ -54,7 +84,7 @@ for(i in 1:length(VP_data)) {
 	
 VP_data[excl_vec_cb] <- NULL
 
-## Exclude based on poor performance in A0V2 -> more than 1/10 errors
+# 4.2 Exclude based on poor performance in A0V2 -> more than 1/10 errors
 excl_vec_a0v2 <- NULL
 comp <- NULL
 for(i in 1:length(VP_data)) {
@@ -62,7 +92,7 @@ for(i in 1:length(VP_data)) {
 	blocks <- which(VP_data[i][[1]][[1]]$Block_noiselevel != 'Kontrollblock loop +noise+')
 	trials <- which(VP_data[i][[1]][[1]]$Label_noiselevel[blocks] == "A0V2")
 	stim <- as.numeric(substring(VP_data[i][[1]][[1]]$Label_noiselevel[blocks][trials],4,4))
-	resp <- as.numeric(VP_data[i][[1]][[1]]$Response_noiselevel[blocks][trials])-2 # somehow adds 2
+	resp <- as.numeric(as.character.factor(VP_data[i][[1]][[1]]$Response_noiselevel[blocks][trials]))
 	comp[i] <- sum(stim != resp)
 	
 		if (comp[i]/(length(stim)) > 0.10) {
@@ -72,3 +102,9 @@ for(i in 1:length(VP_data)) {
 	} # for loop
 	
 VP_data[excl_vec_a0v2] <- NULL
+
+## 5. Compute Response Rates
+
+## 6. Stats
+
+## 7. Plots
