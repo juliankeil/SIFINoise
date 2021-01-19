@@ -5,6 +5,9 @@
 # 3. Exclude based on checks
 # 4. Exclude based on control trials
 
+## 0. Get packages
+library(tidyr)
+
 ## 1. Get Data
 # 1.1 Set Working Directors
 setwd('/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Fertig/Zimmermann/SIFINoise_Git/01_Data/01_ProcessedData/')
@@ -104,7 +107,57 @@ for(i in 1:length(VP_data)) {
 VP_data[excl_vec_a0v2] <- NULL
 
 ## 5. Compute Response Rates
-
+alldat <- NULL
+for(i in 1:length(VP_data)) {
+	# collect the data
+	tmpdat <- droplevels(VP_data[i][[1]][[1]],"")
+	
+	# build empty matrices
+	r0 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+	r1 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+	r2 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+	
+	rt0 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+	rt1 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+	rt2 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+	
+	# loop conditions and responses
+	b <- 1 # start at 1
+	for(bl in levels(tmpdat$Block_noiselevel)) {
+		c <- 1 # start at 1
+		for(cond in levels(tmpdat$Label_noiselevel)) {
+			# collect the number of responses
+			r0[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0)
+			r1[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1)
+			r2[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2)
+			# collect the response times
+			rt0[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0])
+			rt1[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1])
+			rt2[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2])
+			c <- c+1
+		} 
+		b <- b+1
+	}
+	# Name the matrices
+	rownames(r0) <- levels(tmpdat$Block_noiselevel)
+	rownames(r1) <- levels(tmpdat$Block_noiselevel)
+	rownames(r2) <- levels(tmpdat$Block_noiselevel)
+	
+	rownames(rt0) <- levels(tmpdat$Block_noiselevel)
+	rownames(rt1) <- levels(tmpdat$Block_noiselevel)
+	rownames(rt2) <- levels(tmpdat$Block_noiselevel)
+	
+	colnames(r0) <- levels(tmpdat$Label_noiselevel)
+	colnames(r1) <- levels(tmpdat$Label_noiselevel)
+	colnames(r2) <- levels(tmpdat$Label_noiselevel)
+	
+	colnames(rt0) <- levels(tmpdat$Label_noiselevel)
+	colnames(rt1) <- levels(tmpdat$Label_noiselevel)
+	colnames(rt2) <- levels(tmpdat$Label_noiselevel)
+	
+	alldat <- rbind(alldat,r0)
+	
+} # for loop
 ## 6. Stats
 
 ## 7. Plots
