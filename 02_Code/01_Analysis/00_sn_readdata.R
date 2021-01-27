@@ -44,7 +44,8 @@ for (i in 1:length(file_list)) {
   for (j in 1:length(VP)) {
   	if (any(names(VP[j]) == dem_cols)) {
   		dem_sel <- which(names(VP[j]) == dem_cols)
-  		dem_row[dem_sel] <- levels(VP[2,j])[2]
+  		dem_field <- which(VP[,j] != "") # fixed for new R behavior
+  		dem_row[dem_sel] <- VP[dem_field,j]
   		} # close the if loop
   } # close the for loop
   VP_demographics[,i] <- dem_row # store the demographic information
@@ -66,7 +67,8 @@ for (i in 1:length(file_list)) {
   for (j in 1:length(VP)) {
   	if (any(names(VP[j]) == exp_cols)) {
   		exp_sel <- which(names(VP[j]) == exp_cols)
-  		exp_row[exp_sel] <- levels(VP[2,j])[2]
+  		exp_field <- which(VP[,j] != "") # fixed for new R behavior
+  		exp_row[exp_sel] <- VP[exp_field,j]
   		} # close the if loop
   } # close the for loop
   VP_checks[,i] <- exp_row # store the sanity check info
