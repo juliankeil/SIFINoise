@@ -107,7 +107,16 @@ for(i in 1:length(VP_data)) {
 VP_data[excl_vec_a0v2] <- NULL
 
 ## 5. Compute Response Rates
-alldat <- NULL
+# build containers
+all_r0 <- NULL
+all_r1 <- NULL
+all_r2 <- NULL
+
+all_rt0 <- NULL
+all_rt1 <- NULL
+all_rt2 <- NULL
+
+# Loop the data
 for(i in 1:length(VP_data)) {
 	# collect the data
 	tmpdat <- droplevels(VP_data[i][[1]][[1]],"")
@@ -126,10 +135,11 @@ for(i in 1:length(VP_data)) {
 	for(bl in levels(tmpdat$Block_noiselevel)) {
 		c <- 1 # start at 1
 		for(cond in levels(tmpdat$Label_noiselevel)) {
-			# collect the number of responses
-			r0[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0)
-			r1[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1)
-			r2[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2)
+			# collect the response rate
+			allresp <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond)
+			r0[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0) /allresp
+			r1[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1) /allresp
+			r2[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2) /allresp
 			# collect the response times
 			rt0[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0])
 			rt1[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1])
@@ -138,15 +148,7 @@ for(i in 1:length(VP_data)) {
 		} 
 		b <- b+1
 	}
-	# Name the matrices
-	rownames(r0) <- levels(tmpdat$Block_noiselevel)
-	rownames(r1) <- levels(tmpdat$Block_noiselevel)
-	rownames(r2) <- levels(tmpdat$Block_noiselevel)
-	
-	rownames(rt0) <- levels(tmpdat$Block_noiselevel)
-	rownames(rt1) <- levels(tmpdat$Block_noiselevel)
-	rownames(rt2) <- levels(tmpdat$Block_noiselevel)
-	
+	# Name the colums
 	colnames(r0) <- levels(tmpdat$Label_noiselevel)
 	colnames(r1) <- levels(tmpdat$Label_noiselevel)
 	colnames(r2) <- levels(tmpdat$Label_noiselevel)
@@ -155,9 +157,82 @@ for(i in 1:length(VP_data)) {
 	colnames(rt1) <- levels(tmpdat$Label_noiselevel)
 	colnames(rt2) <- levels(tmpdat$Label_noiselevel)
 	
-	alldat <- rbind(alldat,r0)
+	# Build data frames
+	r0d <- as.data.frame(r0)
+	r0d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+	r0d$ID <- as.factor(names(VP_data[i]))
+	
+	all_r0 <- rbind(all_r0,r0d)
+	
+	r1d <- as.data.frame(r1)
+	r1d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+	r1d$ID <- as.factor(names(VP_data[i]))
+	
+	all_r1 <- rbind(all_r1,r1d)
+	
+	r2d <- as.data.frame(r2)
+	r2d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+	r2d$ID <- as.factor(names(VP_data[i]))
+	
+	all_r2 <- rbind(all_r2,r2d)
+	
+	rt0d <- as.data.frame(rt0)
+	rt0d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+	rt0d$ID <- as.factor(names(VP_data[i]))
+	
+	all_rt0 <- rbind(all_rt0,rt0d)
+	
+	rt1d <- as.data.frame(rt1)
+	rt1d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+	rt1d$ID <- as.factor(names(VP_data[i]))
+	
+	all_rt1 <- rbind(all_rt1,rt1d)
+	
+	rt2d <- as.data.frame(rt2)
+	rt2d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+	rt2d$ID <- as.factor(names(VP_data[i]))
+	
+	all_rt2 <- rbind(all_rt2,rt2d)
 	
 } # for loop
 ## 6. Stats
+install.packages('emmeans') #posthoc test
+library(emmeans)
+
+A2V1 <- subset(A2V1[A2V1$Block != "Kontrollblock loop +noise+",], select = c(A2V1,Block,ID))
+A2V1$Block <- relevel(A2V1$Block, ref="main baseline +noise+")
+A2V1$BlockN <- as.numeric(A2V1$Block)
+
+mod1 <- aov(A2V1 ~ Block + Error(ID), data = A2V1)
+summary(mod1)
+
+mod2 <- aov(A2V1 ~ BlockN + Error(ID), data = A2V1)
+summary(mod2)
+
+# Pairwise post-hoc comparisons
+emm_s <- emmeans(mod1, ~Block)
+pairs(emm_s)
+
+
+require(nlme)
+lmer1 <- lme(fixed=A2V1 ~ BlockN, random=~1|ID, data = A2V1)
+anova(lmer1)
+
+# Quadratic Model
+A2V1_noise <- subset(A2V1[A2V1$Block != "main baseline +noise+",], select = c(A2V1,Block,ID))
+A2V1_noise$BlockN <- as.numeric(A2V1_noise$Block)
+A2V1_noise$BlockN2 <- A2V1_noise$BlockN^2
+lmer2 <- lme(fixed=A2V1 ~ BlockN + BlockN2, random=~1|ID, data = A2V1_noise)
+anova(lmer2)
+
+# Export for JASP for sanity checks
+require(tidyr)
+A2V1 <- subset(A2V1[A2V1$Block != "Kontrollblock loop +noise+",], select = c(A2V1,Block,ID))
+A2V1$Block <- relevel(A2V1$Block, ref="main baseline +noise+")
+A2V1s <- spread(A2V1,Block,A2V1)
+write.csv(A2V1s,file = "A2V1_Table.csv")
 
 ## 7. Plots
+Blockvalues <- seq(0,9,0.01)
+A2V1.qudratic <- predict(lmer2, list(BlockN=Blockvalues,BlockN2=Blockvalues^2))
+plot(A2V1$Block,A2V1$A2V1,pch=16)
