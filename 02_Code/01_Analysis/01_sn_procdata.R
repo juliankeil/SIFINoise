@@ -4,9 +4,9 @@
 # 2. Exclude based on demographics
 # 3. Exclude based on checks
 # 4. Exclude based on control trials
-
-## 0. Get packages
-library(tidyr)
+# 5. Extract trial averages for responses and RTs
+# 6. Stats -> repeated-measures ANOVAs with post-hoc tests
+# 7. Plots -> Raincloud plots
 
 ## 1. Get Data
 # 1.1 Set Working Directors
@@ -194,45 +194,52 @@ for(i in 1:length(VP_data)) {
 	
 	all_rt2 <- rbind(all_rt2,rt2d)
 	
-} # for loop
+} # for loop around participants
+
 ## 6. Stats
-install.packages('emmeans') #posthoc test
-library(emmeans)
+# Get packages
+require(emmeans)
+require(nlme)
+require(tidyr)
+require(DescTools)
 
-A2V1 <- subset(A2V1[A2V1$Block != "Kontrollblock loop +noise+",], select = c(A2V1,Block,ID))
+# 6.1. repeated measures ANOVA for all experimental blocks
+# TO DO: 
+# - REPEAT FOR ALL CONDITIONS AND REACTION TIMES
+# - BUILD NICE ANOVA TABLES
+# - CHECK SPHERICITY USING MAUCHLY TEST AND APPLY GREENHOUSE-GEISSER CORRECTION IF NEEDED
+# - CHECK NORMAL DISTRIBUTION USING LILLEFORS TEST AND USE FRIEDMAN TEST IF NEEDED
+
+A2V1 <- subset(all_r2[all_r2 $Block != "Kontrollblock loop +noise+",], select = c(A2V1,Block,ID))
 A2V1$Block <- relevel(A2V1$Block, ref="main baseline +noise+")
-A2V1$BlockN <- as.numeric(A2V1$Block)
 
-mod1 <- aov(A2V1 ~ Block + Error(ID), data = A2V1)
+mod1 <- aov(A2V1 ~ Block + Error(ID/Block), data = A2V1)
 summary(mod1)
-
-mod2 <- aov(A2V1 ~ BlockN + Error(ID), data = A2V1)
-summary(mod2)
+EtaSq(mod1, type = 1, anova = TRUE)
 
 # Pairwise post-hoc comparisons
 emm_s <- emmeans(mod1, ~Block)
 pairs(emm_s)
 
+# 6.2. Let's pretend the noise steps are ordinal scaled to check for quadratic trend along the noise steps
+A2V1_noise <- subset(A2V1[A2V1$Block != "main baseline +noise+",], select = c(A2V1,Block,ID))
 
-require(nlme)
-lmer1 <- lme(fixed=A2V1 ~ BlockN, random=~1|ID, data = A2V1)
+# Linear model
+A2V1_noise$BlockN <- as.numeric(A2V1_noise$Block)
+lmer1 <- lme(fixed=A2V1 ~ BlockN, random=~1|ID, data = A2V1_noise)
 anova(lmer1)
 
 # Quadratic Model
-A2V1_noise <- subset(A2V1[A2V1$Block != "main baseline +noise+",], select = c(A2V1,Block,ID))
-A2V1_noise$BlockN <- as.numeric(A2V1_noise$Block)
 A2V1_noise$BlockN2 <- A2V1_noise$BlockN^2
 lmer2 <- lme(fixed=A2V1 ~ BlockN + BlockN2, random=~1|ID, data = A2V1_noise)
 anova(lmer2)
 
 # Export for JASP for sanity checks
-require(tidyr)
-A2V1 <- subset(A2V1[A2V1$Block != "Kontrollblock loop +noise+",], select = c(A2V1,Block,ID))
-A2V1$Block <- relevel(A2V1$Block, ref="main baseline +noise+")
 A2V1s <- spread(A2V1,Block,A2V1)
 write.csv(A2V1s,file = "A2V1_Table.csv")
 
 ## 7. Plots
-Blockvalues <- seq(0,9,0.01)
-A2V1.qudratic <- predict(lmer2, list(BlockN=Blockvalues,BlockN2=Blockvalues^2))
-plot(A2V1$Block,A2V1$A2V1,pch=16)
+# TO DO:
+# - MAKE NICE SCATTER + MEAN + SD PLOTS FOR RELEVANT EFFECTS (TO BE DETERMINED BASED ON THE ANOVAS)
+
+plot(A2V1 ~ Block, data = A2V1)
