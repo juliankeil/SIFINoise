@@ -109,6 +109,18 @@ for(i in 1:length(VP_data)) {
 
 VP_data[excl_vec_a0v2] <- NULL
 
+# 4.3. Clean up the demographics
+remvec <- c(dem_catch[2],excl_vec_nr,excl_vec_a0v2)
+VP_demographics <- VP_demographics[,-remvec]
+
+for (v in 1:ncol(VP_demographics)) {
+	bd <- strsplit(VP_demographics[1,v],'-')
+	age[v] <- 2020 - as.numeric(bd$id_birth[1])
+}
+
+mean(age)
+sd(age)
+
 ##---- 5. Compute Response Rates & Median Reaction Times ----
 # build containers
 all_r0 <- NULL
