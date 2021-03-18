@@ -1,4 +1,7 @@
 ### SIFI Noise Process data
+
+# Script by Julian Keil & Merle Schuckart
+
 # Steps:
 # 1. Load data
 # 2. Exclude based on demographics
@@ -8,19 +11,19 @@
 # 6. Stats -> repeated-measures ANOVAs with post-hoc tests
 # 7. Plots -> Raincloud plots
 
-## 1. Get Data
+##---- 1. Get Data ----
 # 1.1 Set Working Directors
 setwd('/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Fertig/Zimmermann/SIFINoise_Git/01_Data/01_ProcessedData/')
-
+#setwd("/Users/merle/Desktop/Arbeit/HiWi/Experimente/Ida Zimmermann")
 load('VP_data.rda')
 
-## 2. Exclude based on demographics
+##---- 2. Exclude based on demographics ----
 dem_sel <- c("id_drugs","id_eyesight","id_hearing","id_neuro")
 dem_catch <- which(VP_demographics[dem_sel,] == "yes", arr.ind = TRUE)
 
 VP_data[dem_catch[2]] <- NULL
 
-## 3. Exclude based on checks
+##---- 3. Exclude based on checks ----
 # 'No'-Responses
 exp_sel <- c("exp_noise", "exp_visual", "exp_auditory")
 exp_catch <- which(VP_checks[exp_sel,] == "no", arr.ind = TRUE)
@@ -39,19 +42,19 @@ exp_catch <- which(VP_checks[exp_sel,] == "zero", arr.ind = TRUE)
 
 VP_data[exp_catch[2]] <- NULL
 
-## 4. Exclusion based on performance
+##---- 4. Exclusion based on performance ----
 # First remove non-responders -> missed more than 1/3 of trials
 excl_vec_nr <- NULL
 nr <- NULL
 for (i in 1:length(VP_data)) {
-	nr[i] <- 0
-	nr[i] <- sum(VP_data[i][[1]][[1]]$Response_noiselevel == "")
-	if ( nr[i] > length(VP_data[i][[1]][[1]]$Response_noiselevel)/3) {
-		excl_vec_nr <- c(excl_vec_nr,i)
-	} # If loop
-	
-	} # For loop
-	
+  nr[i] <- 0
+  nr[i] <- sum(VP_data[i][[1]][[1]]$Response_noiselevel == "")
+  if ( nr[i] > length(VP_data[i][[1]][[1]]$Response_noiselevel)/3) {
+    excl_vec_nr <- c(excl_vec_nr,i)
+  } # If loop
+
+} # For loop
+
 VP_data[excl_vec_nr] <- NULL
 
 # Then remove bad trials
@@ -59,54 +62,54 @@ VP_data[excl_vec_nr] <- NULL
 # Response too early (<100ms)
 # Response too late (>1700ms)
 for(i in 1:length(VP_data)) {
-	
-	# No response
-	VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Response_noiselevel != "",]
-	# Fast response
-	VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Value_noiselevel >= 100,]
-	# Slow response
-	VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Value_noiselevel <= 1700,]
-	
-	} # for loop
+
+  # No response
+  VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Response_noiselevel != "",]
+  # Fast response
+  VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Value_noiselevel >= 100,]
+  # Slow response
+  VP_data[i][[1]][[1]] <- VP_data[i][[1]][[1]][VP_data[i][[1]][[1]]$Value_noiselevel <= 1700,]
+
+} # for loop
 
 # 4.1 Exclude based on poor performance in control blocks -> more than 1/3 errors
 excl_vec_cb <- NULL
 comp <- NULL
 for(i in 1:length(VP_data)) {
-	
-	blocks <- which(VP_data[i][[1]][[1]]$Block_noiselevel == 'Kontrollblock loop +noise+')
-	stim <- as.numeric(substring(VP_data[i][[1]][[1]]$Label_noiselevel[blocks],2,2))
-	resp <- as.numeric(as.character.factor(VP_data[i][[1]][[1]]$Response_noiselevel[blocks]))
-	comp[i] <- sum(stim != resp)
-	
-		if (comp[i]/(length(stim)) > 0.34) {
-			excl_vec_cb <- c(excl_vec_cb,i)
-		} # if loop
-		
-	} # for loop
-	
+
+  blocks <- which(VP_data[i][[1]][[1]]$Block_noiselevel == 'Kontrollblock loop +noise+')
+  stim <- as.numeric(substring(VP_data[i][[1]][[1]]$Label_noiselevel[blocks],2,2))
+  resp <- as.numeric(as.character.factor(VP_data[i][[1]][[1]]$Response_noiselevel[blocks]))
+  comp[i] <- sum(stim != resp)
+
+  if (comp[i]/(length(stim)) > 0.34) {
+    excl_vec_cb <- c(excl_vec_cb,i)
+  } # if loop
+
+} # for loop
+
 VP_data[excl_vec_cb] <- NULL
 
 # 4.2 Exclude based on poor performance in A0V2 -> more than 1/10 errors
 excl_vec_a0v2 <- NULL
 comp <- NULL
 for(i in 1:length(VP_data)) {
-	
-	blocks <- which(VP_data[i][[1]][[1]]$Block_noiselevel != 'Kontrollblock loop +noise+')
-	trials <- which(VP_data[i][[1]][[1]]$Label_noiselevel[blocks] == "A0V2")
-	stim <- as.numeric(substring(VP_data[i][[1]][[1]]$Label_noiselevel[blocks][trials],4,4))
-	resp <- as.numeric(as.character.factor(VP_data[i][[1]][[1]]$Response_noiselevel[blocks][trials]))
-	comp[i] <- sum(stim != resp)
-	
-		if (comp[i]/(length(stim)) > 0.10) {
-			excl_vec_a0v2 <- c(excl_vec_a0v2,i)
-		} # if loop
-		
-	} # for loop
-	
+
+  blocks <- which(VP_data[i][[1]][[1]]$Block_noiselevel != 'Kontrollblock loop +noise+')
+  trials <- which(VP_data[i][[1]][[1]]$Label_noiselevel[blocks] == "A0V2")
+  stim <- as.numeric(substring(VP_data[i][[1]][[1]]$Label_noiselevel[blocks][trials],4,4))
+  resp <- as.numeric(as.character.factor(VP_data[i][[1]][[1]]$Response_noiselevel[blocks][trials]))
+  comp[i] <- sum(stim != resp)
+
+  if (comp[i]/(length(stim)) > 0.10) {
+    excl_vec_a0v2 <- c(excl_vec_a0v2,i)
+  } # if loop
+
+} # for loop
+
 VP_data[excl_vec_a0v2] <- NULL
 
-## 5. Compute Response Rates
+##---- 5. Compute Response Rates & Median Reaction Times ----
 # build containers
 all_r0 <- NULL
 all_r1 <- NULL
@@ -116,120 +119,833 @@ all_rt0 <- NULL
 all_rt1 <- NULL
 all_rt2 <- NULL
 
+all_rts <- NULL
+
 # Loop the data
 for(i in 1:length(VP_data)) {
-	# collect the data
-	tmpdat <- droplevels(VP_data[i][[1]][[1]],"")
-	
-	# build empty matrices
-	r0 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
-	r1 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
-	r2 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
-	
-	rt0 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
-	rt1 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
-	rt2 <- matrix(,nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
-	
-	# loop conditions and responses
-	b <- 1 # start at 1
-	for(bl in levels(tmpdat$Block_noiselevel)) {
-		c <- 1 # start at 1
-		for(cond in levels(tmpdat$Label_noiselevel)) {
-			# collect the response rate
-			allresp <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond)
-			r0[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0) /allresp
-			r1[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1) /allresp
-			r2[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2) /allresp
-			# collect the response times
-			rt0[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0])
-			rt1[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1])
-			rt2[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2])
-			c <- c+1
-		} 
-		b <- b+1
-	}
-	# Name the colums
-	colnames(r0) <- levels(tmpdat$Label_noiselevel)
-	colnames(r1) <- levels(tmpdat$Label_noiselevel)
-	colnames(r2) <- levels(tmpdat$Label_noiselevel)
-	
-	colnames(rt0) <- levels(tmpdat$Label_noiselevel)
-	colnames(rt1) <- levels(tmpdat$Label_noiselevel)
-	colnames(rt2) <- levels(tmpdat$Label_noiselevel)
-	
-	# Build data frames
-	r0d <- as.data.frame(r0)
-	r0d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
-	r0d$ID <- as.factor(names(VP_data[i]))
-	
-	all_r0 <- rbind(all_r0,r0d)
-	
-	r1d <- as.data.frame(r1)
-	r1d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
-	r1d$ID <- as.factor(names(VP_data[i]))
-	
-	all_r1 <- rbind(all_r1,r1d)
-	
-	r2d <- as.data.frame(r2)
-	r2d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
-	r2d$ID <- as.factor(names(VP_data[i]))
-	
-	all_r2 <- rbind(all_r2,r2d)
-	
-	rt0d <- as.data.frame(rt0)
-	rt0d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
-	rt0d$ID <- as.factor(names(VP_data[i]))
-	
-	all_rt0 <- rbind(all_rt0,rt0d)
-	
-	rt1d <- as.data.frame(rt1)
-	rt1d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
-	rt1d$ID <- as.factor(names(VP_data[i]))
-	
-	all_rt1 <- rbind(all_rt1,rt1d)
-	
-	rt2d <- as.data.frame(rt2)
-	rt2d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
-	rt2d$ID <- as.factor(names(VP_data[i]))
-	
-	all_rt2 <- rbind(all_rt2,rt2d)
-	
+  # collect the data
+  tmpdat <- droplevels(VP_data[i][[1]][[1]],"")
+
+  # build empty matrices
+  r0 <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+  r1 <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+  r2 <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+
+  rt0 <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+  rt1 <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+  rt2 <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+
+  rt <- matrix( , nrow=length(levels(tmpdat$Block_noiselevel)), ncol=length(levels(tmpdat$Label_noiselevel)))
+
+  # loop conditions and responses
+  b <- 1 # start at 1
+  for(bl in levels(tmpdat$Block_noiselevel)) {
+    c <- 1 # start at 1
+    for(cond in levels(tmpdat$Label_noiselevel)) {
+      # collect the response rate
+      allresp <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond)
+      r0[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0) /allresp
+      r1[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1) /allresp
+      r2[b,c] <- sum(tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2) /allresp
+      # collect the median response times (might be NA, e.g. if cond was A2V2 and there was no response = 0)
+      rt0[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 0])
+      rt1[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 1])
+      rt2[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond & tmpdat$Response_noiselevel == 2])
+
+      # get median response times, but this time aggregated over all responses
+      rt[b,c] <- median(tmpdat$Value_noiselevel[tmpdat$Block_noiselevel == bl & tmpdat$Label_noiselevel == cond])
+
+      c <- c+1
+    }
+    b <- b+1
+  }
+  # Name the colums
+  colnames(r0) <- levels(tmpdat$Label_noiselevel)
+  colnames(r1) <- levels(tmpdat$Label_noiselevel)
+  colnames(r2) <- levels(tmpdat$Label_noiselevel)
+
+  colnames(rt0) <- levels(tmpdat$Label_noiselevel)
+  colnames(rt1) <- levels(tmpdat$Label_noiselevel)
+  colnames(rt2) <- levels(tmpdat$Label_noiselevel)
+
+  colnames(rt) <- levels(tmpdat$Label_noiselevel)
+
+  # Build data frames
+  r0d <- as.data.frame(r0)
+  r0d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  r0d$ID <- as.factor(names(VP_data[i]))
+
+  all_r0 <- rbind(all_r0,r0d)
+
+  r1d <- as.data.frame(r1)
+  r1d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  r1d$ID <- as.factor(names(VP_data[i]))
+
+  all_r1 <- rbind(all_r1,r1d)
+
+  r2d <- as.data.frame(r2)
+  r2d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  r2d$ID <- as.factor(names(VP_data[i]))
+
+  all_r2 <- rbind(all_r2,r2d)
+
+  rt0d <- as.data.frame(rt0)
+  rt0d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  rt0d$ID <- as.factor(names(VP_data[i]))
+
+  all_rt0 <- rbind(all_rt0,rt0d)
+
+  rt1d <- as.data.frame(rt1)
+  rt1d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  rt1d$ID <- as.factor(names(VP_data[i]))
+
+  all_rt1 <- rbind(all_rt1,rt1d)
+
+  rt2d <- as.data.frame(rt2)
+  rt2d$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  rt2d$ID <- as.factor(names(VP_data[i]))
+
+  all_rt2 <- rbind(all_rt2,rt2d)
+
+  rtd <- as.data.frame(rt)
+  rtd$Block <- as.factor(levels(tmpdat$Block_noiselevel))
+  rtd$ID <- as.factor(names(VP_data[i]))
+
+  all_rts <- rbind(all_rts,rtd)
+
 } # for loop around participants
 
-## 6. Stats
+
+##---- 6. Stats ----
 # Get packages
+
+packages <- c("emmeans", "nlme", "tidyr", "DescTools",
+              "nortest",  "car", "rstatix","gdata")
+
+# install packages if they're not installed yet:
+not_installed <- setdiff(packages, rownames(installed.packages()))
+
+if (length(not_installed) > 0) {
+  install.packages(not_installed)
+}
+
 require(emmeans)
 require(nlme)
 require(tidyr)
 require(DescTools)
+require(nortest) # for lilliefors tests
+require(car) # for levene tests
+require(rstatix) # for anova_test function
+require(gdata) # for cleaning up
 
-# 6.1. repeated measures ANOVA for all experimental blocks
-# TO DO: 
-# - REPEAT FOR ALL CONDITIONS AND REACTION TIMES
-# - BUILD NICE ANOVA TABLES
-# - CHECK SPHERICITY USING MAUCHLY TEST AND APPLY GREENHOUSE-GEISSER CORRECTION IF NEEDED
-# - CHECK NORMAL DISTRIBUTION USING LILLEFORS TEST AND USE FRIEDMAN TEST IF NEEDED
+##---- 6.1 Test normality of distribution ----
+##---- 6.1.1 Lilliefors-Test: Normality of distribution - Response rates: ----
+# test normality of distribution using lilliefors tests
+# (for each noise level, SIFI condition & response separately)
 
-A2V1 <- subset(all_r2[all_r2 $Block != "Kontrollblock loop +noise+",], select = c(A2V1,Block,ID))
-A2V1$Block <- relevel(A2V1$Block, ref="main baseline +noise+")
+all_responses_dfs <- list(all_r0, all_r1, all_r2) # dataframes containing response rates
+all_responses_names <- c(0:2) # responses from 0 - 2
+lillie_all_resp <- data.frame() # placeholder for the lilliefors test results
 
-mod1 <- aov(A2V1 ~ Block + Error(ID/Block), data = A2V1)
-summary(mod1)
-EtaSq(mod1, type = 1, anova = TRUE)
+for (df in 1:3){ # loop responses (there are 3, aka 3 dataframes saved in all_responses_dfs)
 
-# Pairwise post-hoc comparisons
-emm_s <- emmeans(mod1, ~Block)
-pairs(emm_s)
+  tmp_df <- all_responses_dfs[[df]] # get current dafaframe
 
-# 6.2. Let's pretend the noise steps are ordinal scaled to check for quadratic trend along the noise steps
+  # placeholder for lilliefors test results df
+  lillie_results_df <- data.frame()
+
+  for (i in (1:9)){ # loop sifi conditions (there are 9)
+
+    # get SIFI condition name from column names in index_df
+    sifi_cond <- names(tmp_df)[i]
+
+    # get dataframe for the indexed SIFI condition
+    #tmp_sifi_df <- subset(tmp_df, Block != "Kontrollblock loop +noise+")[,c(10,i)] # excl. control block
+    tmp_sifi_df <- tmp_df[,c(10,i)] # incl. control block
+
+    # loop blocks, run lillie test and save output in df
+
+    lillie <- data.frame() # placeholder for df for lilliefors test results
+
+    for (bl in unique(tmp_sifi_df$Block)){ # loop noise condition blocks (there are 9)
+
+      # There's a "bug" in the lillie.test() function:
+      # If there's a vector of identical values (which occurs in our df),
+      # the test throws an error message (which is not nice).
+      # Obviously the data are not normally distributed in such cases,
+      # but we don't get a value here and that's a problem.
+
+      # workaround: use NAs instead if there are only identical values:
+      if (length(unique(subset(tmp_sifi_df, Block == bl)[,2])) == 1){
+        D_val <- NA
+        p_val <- NA
+      }
+      else{
+        # run lilliefors test
+        lillie_result <- lillie.test(subset(tmp_sifi_df, Block == bl)[,2])
+        # get test statistic D and p-value
+        D_val <- round(lillie_result$statistic, digits = 3)
+        # careful, returns 0 if its's < .001:
+        p_val <- round(lillie_result$p.value, digits = 3)
+      }
+
+      # save both values in df
+      lillie <- as.data.frame(rbind(lillie, as.data.frame(cbind(bl, D_val, p_val))))
+
+      # if df is finished, add column with SIFI condition to lillie df
+      if (length(lillie[,1]) == length(unique(tmp_sifi_df$Block))){
+        sifi_condition <-  c(rep(sifi_cond, times = length(lillie[,1])))
+        lillie <- as.data.frame(cbind(sifi_cond, lillie))
+      } #END if loop
+
+    } #END loop noise conditions aka blocks
+
+    # add to lillie_results_df
+    lillie_results_df <- as.data.frame(rbind(lillie_results_df, lillie))
+
+  } #END loop sifi conditions
+
+  # append name of df as additional column
+
+  response <- c(rep(all_responses_names[df], times = length(lillie_results_df[,1])))
+  lillie_results_df <- as.data.frame(cbind(response, lillie_results_df))
+
+  # rbind dataframes
+  lillie_all_resp <- as.data.frame(rbind(lillie_all_resp, lillie_results_df))
+
+} #END loop responses aka dataframes
+
+rm(lillie, lillie_result, lillie_results_df)
+
+# Have a look at the results:
+# If there's an NA for D and p, it means that there were
+# only identical values in the tested group.
+# If p = 0 it means p < 0.001
+# View(lillie_results_df)
+
+
+##---- 6.1.2 Lilliefors-Test: Normality of distribution - Reaction times: ----
+# test normality of distribution using lilliefors tests
+# (for each noise level, SIFI condition & response separately)
+
+all_rts_dfs <- list(all_rt0, all_rt1, all_rt2, all_rts) # dfs containing reaction times
+all_rts_names <- c(0:2, "all responses") # responses
+lillie_all_rts <- data.frame() # placeholder for the lilliefors test results
+
+for (df in 1:length(all_rts_dfs)){ # loop dataframes saved in all_responses_dfs
+
+  tmp_df <- all_rts_dfs[[df]] # get current dafaframe
+
+  # placeholder for lilliefors test results df
+  lillie_results_df <- data.frame()
+
+  for (i in (1:9)){ # loop sifi conditions (there are 9)
+
+    # get SIFI condition name from column names in index_df
+    sifi_cond <- names(tmp_df)[i]
+
+    # get dataframe for the indexed SIFI condition
+    tmp_sifi_df <- subset(tmp_df, sifi_cond == sifi_cond)[,c(10,i)]
+
+    # loop blocks, run lillie test and save output in df:
+
+    lillie <- data.frame() # placeholder for df for lilliefors test results
+    for (bl in unique(tmp_sifi_df$Block)){ # loop blocks
+
+      # problem: There are some cases in which there's only NA for the median RT
+      # (e.g. if the SIFI condition was A2V2 and the response we filtered for was 0)
+
+      # workaround: use NAs instead if there are < 5 non-NA values for the rts:
+      if (length(na.omit(subset(tmp_sifi_df, Block == bl))[,2]) < 5){
+        D_val <- NA
+        p_val <- NA
+      }
+      else{
+        # run lilliefors test
+        lillie_result <- lillie.test(subset(tmp_sifi_df, Block == bl)[,2])
+        # get test statistic D and p-value
+        D_val <- round(lillie_result$statistic, digits = 3)
+        # careful, returns 0 if its's < .001
+        p_val <- round(lillie_result$p.value, digits = 3)
+      }
+
+      # save both values in df
+      lillie <- as.data.frame(rbind(lillie, as.data.frame(cbind(bl, D_val, p_val))))
+
+      # if df is finished, add column with SIFI condition to lillie df
+      if (length(lillie[,1]) == length(unique(tmp_sifi_df$Block))){
+        sifi_condition <-  c(rep(sifi_cond, times = length(lillie[,1])))
+        lillie <- as.data.frame(cbind(sifi_condition, lillie))
+      } #END if loop
+    } #END loop blocks
+
+    # add to lillie_results_df
+    lillie_results_df <- as.data.frame(rbind(lillie_results_df, lillie))
+
+  } #END loop sifi conditions
+
+  # append name of df as additional column
+  response <- c(rep(all_rts_names[df], times = length(lillie_results_df[,1])))
+  lillie_results_df <- as.data.frame(cbind(response, lillie_results_df))
+
+  # rbind dataframes
+  lillie_all_rts <- as.data.frame(rbind(lillie_all_rts, lillie_results_df))
+
+} #END loop dataframes
+
+# clean up:
+rm(lillie, lillie_result, lillie_results_df,
+   bl, df_name, sifi_cond, sifi_condition,
+   p_val, D_val, i, tmp_sifi_df, tmp_df)
+
+# Have a look at the results:
+# If there's an NA for D and p, it means that there were
+# only identical values in the tested group.
+# If p = 0 it means p < 0.001
+# View(lillie_results_df)
+
+##---- 6.2 ANOVAs & post hoc comparisons ----
+
+##---- 6.2.1 Test differences between response rates: ----
+# Is there a difference between response rates between the noise levels?
+# --> Check for each SIFI condition & response (0, 1 & 2) separately!
+
+# test illusionrate / rate of correct answers ~ block (for every SIFI condition):
+# A2V1, response = 2 (illusion rate)
+# A0V1, response = 1 (rate of correct answers)
+# A0V2, response = 2 (rate of correct answers)
+# A1V0, response = 0 (rate of correct answers)
+# A1V1, response = 1 (rate of correct answers)
+# A1V2, response = 1 (illusion rate)
+# A2V0, response = 0 (rate of correct answers)
+# A2V2, response = 2 (rate of correct answers)
+# A2V1late, response = 2 (illusion rate)
+
+# get sifi condition names:
+sifi_conds <- colnames(all_r0)[1:9]
+# create vector of corresponding responses we'd like to have a look at:
+sifi_response <- c(1, 2, 0, 1, 1, 0, 2, 2, 2)
+# get names of noise levels:
+noise_levels <- as.character(unique(all_r0$Block))
+
+# Reminder:
+# response rates are in all_responses_dfs
+# (separated by responses)
+
+# placeholder for the results from the ANOVAs / Friedman tests
+ANOVA_resp <- data.frame()
+mauchlys_res <- data.frame()
+
+for (idx_sifi in 1:length(sifi_conds)){ # loop sifi conditions & responses
+  sifi_name <- sifi_conds[idx_sifi] # get name of current SIFI condition
+  sifi_resp <- sifi_response[idx_sifi] # get response
+
+  # see if we need a rank tranformed ANOVA or a normal one (exclude control block):
+  lillie_res <-  subset(lillie_all_resp, sifi_cond == sifi_name &
+                          response == sifi_resp &
+                          bl != "Kontrollblock loop +noise+")
+
+  # Hint: In this case, we don't need levene tests because the results of the
+  # lilliefors tests were all significant. So we'll run only rank
+  # transformed ANOVAs anyway.
+
+  # if there are NAs (if there were all the same values in the tested group)
+  # or the lilliefors tests were significant (= data not normally distr.),
+  # use a rank tranformed ANOVA
+  if (any(is.na(lillie_res$p_val) | lillie_res$p_val <= 0.05)){ # rank transformed ANOVA if loop
+
+    # get dataframe containing all response rates for a certain response
+    # for the current SIFI condition, the noise level (in Block) and the participants' IDs:
+    tmp_df <- subset(all_responses_dfs[[sifi_resp + 1]],
+                     Block != "Kontrollblock loop +noise+")[c(idx_sifi, 10,11)]
+
+    # relevel data so "main baseline +noise+" is the Baseline
+    tmp_df$Block <- relevel(tmp_df$Block, ref="main baseline +noise+")
+
+    # rank transform response rates:
+    tmp_df$rank_data <- rank(tmp_df[1])
+
+    # run ANOVA on new column with the transformed data:
+
+    # anova_test() is a wrapper around the Anova() and aov() functions
+    # and provides Mauchly's test results as well as
+    # Greenhouse-Geisser-corrected p-values,
+    # so we use this one instead of aov() (sorry Julian):
+    anova_res <- anova_test(data = tmp_df,
+                            formula = rank_data ~ Block + Error(ID/Block))
+
+    # create test name:
+    test_name <-  "ANOVA (rank transformed)"
+
+    # create description of comparison:
+    comparison <- paste("all noise levels in", as.character(sifi_name),
+                        "with response =", as.character(sifi_resp),
+                        sep = " ")
+
+
+    # In some cases, there are no test results for mauchly's test because
+    # sphericity is definitely given, so the anova_test function doesn't run mauchly's test.
+    # I don't really get why this happens tbh, but in those cases we don't need a
+    # GG-corrected p-value.
+
+    # If mauchly's test can't be computed because Sphericity is perfect,
+    # the output looks a little different, so p and F are in a different position.
+
+    if (is.null(anova_res$`Mauchly's Test for Sphericity`[2])){ # mauchly's' test if loop
+
+      # get mauchly's test results:
+      mauchlys_W <- 1 # perfect sphericity
+      mauchlys_p <- "perfect sphericity - p cannot be computed"
+
+      # get ANOVA results:
+      F_val <- anova_res$F
+      p_val <- anova_res$p
+      degrees_of_freedom <- paste("(", paste(as.character(anova_res$DFn),
+                                             as.character(anova_res$DFd),
+                                             sep = ", "), ")", sep = "")
+    } else { # if mauchly's test can be computed:
+
+      # get mauchly's test results:
+      mauchlys_W <- round(as.numeric(anova_res$`Mauchly's Test for Sphericity`[2]), digits = 3)
+      mauchlys_p <- round(as.numeric(anova_res$`Mauchly's Test for Sphericity`[3]), digits = 3)
+
+      # get ANOVA results:
+      F_val <-  round(as.numeric(anova_res$`ANOVA`[4]), digits = 3)
+      p <- round(as.numeric(anova_res$`ANOVA`[5]), digits = 3)
+      degrees_of_freedom <- paste("(", paste(as.character(anova_res$`ANOVA`[2]),
+                                             as.character(anova_res$`ANOVA`[3]),
+                                             sep = ", "), ")", sep = "")
+
+    } # End mauchly's test if loop
+
+    # put into df for mauchly's results:
+    mauchlys_res <- rbind(mauchlys_res, cbind(sifi_name, mauchlys_W, mauchlys_p))
+
+    # save corrected p values if mauchly's test was significant:
+    if (mauchlys_p <= 0.05){
+      p <- round(as.numeric(anova_res$`Sphericity Corrections`[4]), digits = 3)
+    }
+
+    # add asterix in the last column if result is significant:
+    significance <- " "
+    if (p < 0.05){
+      significance <- " * "
+    }
+
+    # create placeholder for test statistic of Wilcoxon signed-rank tests:
+    W <- " "
+
+    # combine values to row and put into results df:
+    ANOVA_resp <- as.data.frame(rbind(ANOVA_resp,
+                                      cbind(test_name, comparison, F_val, W,
+                                            degrees_of_freedom, p, significance)))
+
+    # if significant...
+    if (p <= 0.05){
+
+      # run post-hoc Wilcoxon signed-rank tests
+      # for all noise level combinations
+
+      # Idea: We always compare 2 groups, so loop all noise levels
+      # to get group 1, but leave out the last block (group 1 can't be
+      # the last block or else there's nothing left to be compared with)
+      # and exclude control block.
+      # To get group 2, we have to loop all noise levels
+      # that haven't been group 1 (aka all that are left).
+
+      # loop noise levels, leave out control block & last block:
+      for (i in 1:(length(noise_levels)-2)){
+
+        # get group 1:
+        group_1 <- noise_levels[i]
+
+        # take all levels that are left except for the control block
+        # control block = last noise level
+        comp_groups <- noise_levels[(i+1):(length(noise_levels)-1)]
+
+        for (group_2 in comp_groups){
+
+          # run Wilcoxon signed-rank test:
+          wilc <- wilcox.test(as.numeric(unlist(subset(tmp_df, Block == group_1)[1])),
+                              as.numeric(unlist(subset(tmp_df, Block == group_2)[1])),
+                              alternative = "two.sided", # two sided test
+                              paired = T, # paired sample
+                              exact = F)
+
+          # create test name:
+          test_name <- "       Wilcoxon signed-rank test"
+
+          # create description of comparison:
+          comparison <- paste("     ", as.character(sifi_name), "in", as.character(group_1),
+                              "vs.", as.character(group_2),
+                              sep = " ")
+
+          # get test statistic W:
+          W <- round(as.numeric(wilc$statistic), digits = 3)
+
+          # get p-value:
+          # Bonferroni correction: Multiply with 28 for the 28 pairs we compare here:
+          p <- round(as.numeric(wilc$p.value)*28, digits = 3)
+
+          # add asterix in last column if result is significant:
+          significance <- " "
+          if (p <= 0.05){
+            significance <- " * "
+          }
+
+          # create placeholders for degrees of freedom &
+          # test statistic of ANOVA:
+          F_val <- " "
+          degrees_of_freedom <- " "
+
+          # combine values to row and put into results df:
+          ANOVA_resp <- as.data.frame(rbind(ANOVA_resp,
+                                            cbind(test_name, comparison, F_val, W,
+                                                  degrees_of_freedom, p, significance)))
+        } # End loop comp groups
+      } # End loop noise levels
+    } # End if loop for Wilcoxon signed-rank test
+  } # End rank transformed ANOVA if loop; no "else" condition needed here as we have
+  # to use rank transformations in all conditions anyway
+} # End loop sifi conditions & responses
+
+rm(idx_sifi, sifi_name, sifi_resp, lillie_res,
+   tmp_df, comp_groups, group_1, group_2,
+   i, test_name, comparison, F_val, W,
+   degrees_of_freedom, p, significance)
+
+# The results for the response rates are in ANOVA_resp:
+# View(ANOVA_resp)
+
+# The results for the mauchly's tests are in mauchlys_res:
+# View(mauchlys_res)
+
+
+##---- 6.2.2 Test differences between reaction times: ----
+
+# Is there a difference between reaction times between the noise levels?
+# --> Check for each SIFI condition separately!
+
+# Reminder:
+# noise levels are in noise_levels
+# sifi condition names are in sifi_cons
+# reaction times are in all_rts
+# lilliefors test results are in lillie_all_rts
+
+# placeholder for the results dfs:
+ANOVA_rts <- data.frame() # ANOVAs & post-hoc tests results
+levene_res <- data.frame() # Levene test results
+
+for (idx_sifi in 1:length(sifi_conds)){ # loop sifi conditions
+
+  # get name of current SIFI condition:
+  sifi_name <- sifi_conds[idx_sifi]
+
+  # see if we need a nonparametrical test
+  # or a "normal" ANOVA (exclude control block):
+
+  # get results of lilliefors tests in current sifi condition:
+  lillie_res <-  subset(lillie_all_rts,
+                        sifi_condition == sifi_name &
+                          response == "all responses" &
+                          bl != "Kontrollblock loop +noise+")
+
+  # Test homogeneity of variance: Run Levene test
+
+  # get data for Levene test:
+  levene_data <- subset(all_rts[c(idx_sifi, 10)], Block != "Kontrollblock loop +noise+")
+
+  # run Levene test:
+  levene <- leveneTest(unlist(levene_data[1]) ~ Block, data = levene_data)
+
+  # get degrees of freedom:
+  levene_df <- paste("(",
+                     paste(as.character(unlist(levene[1])[1]),
+                           as.character(unlist(levene[1])[2]),
+                           sep = ", "),
+                     ")",
+                     sep = "")
+
+  # get test statistic F:
+  levene_F <- as.numeric(round(as.numeric(unlist(levene[2])[1]), digits = 3))
+
+  # get p-value:
+  levene_p <- as.numeric(round(as.numeric(unlist(levene[3])[1]), digits = 3))
+
+  # put levene test result into dataframe
+  levene_res <- rbind(levene_res, cbind(sifi_name, levene_df, levene_F, levene_p))
+
+  # If Levene test was significant
+  # or if there are NAs (if there were all the same values in the tested group)
+  # or if the lilliefors tests were significant (= data not normally distr.),
+  # use a rank transformed ANOVA
+  rank_transform_data = F
+  if (levene_p <= 0.05| any(is.na(lillie_res$p_val) | lillie_res$p_val <= 0.05)){
+    rank_transform_data = T
+  }
+
+  # get dataframe containing all reaction times for the current SIFI condition,
+  # the noise level (in Block) and the participants' IDs:
+  tmp_df <- subset(all_rts, Block != "Kontrollblock loop +noise+")[c(idx_sifi, 10,11)]
+
+  # relevel data so "main baseline +noise+" is the Baseline
+  tmp_df$Block <- relevel(tmp_df$Block, ref="main baseline +noise+")
+
+  # use rank transformed data if needed:
+  if (rank_transform_data){
+
+    # rank transform rts:
+    tmp_df$rank_data <- rank(tmp_df[1])
+
+    # run ANOVA on rank transformed data
+    anova_res <- anova_test(data = tmp_df,
+                            formula = rank_data ~ Block + Error(ID/Block))
+    # create test name:
+    test_name <-  "ANOVA (rank transformed)"
+
+  } else {
+
+    # use "normal" ANOVA (not rank transformed):
+    anova_res <- anova_test(data = tmp_df,
+                            formula = unlist(tmp_df[1]) ~ Block + Error(ID/Block))
+    # create test name:
+    test_name <-  "ANOVA"
+
+  }
+
+  # create description of comparison:
+  comparison <- paste("all noise levels in", as.character(sifi_name), sep = " ")
+
+  # In some cases, there are no test results for mauchly's test because
+  # sphericity is definitely given, so the anova_test function doesn't run mauchly's test.
+  # I don't really get why this happens tbh, but in those cases we don't need a
+  # GG-corrected p-value.
+
+  # If mauchly's test can't be computed because Sphericity is perfect,
+  # the output looks a little different, so p and F are in a different position.
+
+  if (is.null(anova_res$`Mauchly's Test for Sphericity`[2])){ # mauchly's' test if loop
+
+    # get mauchly's test results:
+    mauchlys_W <- 1 # perfect sphericity
+    mauchlys_p <- "perfect sphericity - p cannot be computed"
+
+    # get ANOVA results:
+    F_val <- anova_res$F
+    p_val <- anova_res$p
+    degrees_of_freedom <- paste("(", paste(as.character(anova_res$DFn),
+                                           as.character(anova_res$DFd),
+                                           sep = ", "), ")", sep = "")
+  } else { # if mauchly's test can be computed:
+
+    # get mauchly's test results:
+    mauchlys_W <- round(as.numeric(anova_res$`Mauchly's Test for Sphericity`[2]), digits = 3)
+    mauchlys_p <- round(as.numeric(anova_res$`Mauchly's Test for Sphericity`[3]), digits = 3)
+
+    # get ANOVA results:
+    F_val <-  round(as.numeric(anova_res$`ANOVA`[4]), digits = 3)
+    p <- round(as.numeric(anova_res$`ANOVA`[5]), digits = 3)
+    degrees_of_freedom <- paste("(", paste(as.character(anova_res$`ANOVA`[2]),
+                                           as.character(anova_res$`ANOVA`[3]),
+                                           sep = ", "), ")", sep = "")
+
+  } # End mauchly's test if loop
+
+  # put into df for mauchly's results:
+  mauchlys_res <- rbind(mauchlys_res, cbind(sifi_name, mauchlys_W, mauchlys_p))
+
+  # save corrected p values if mauchly's test was significant:
+  if (mauchlys_p <= 0.05){
+    p <- round(as.numeric(anova_res$`Sphericity Corrections`[4]), digits = 3)
+  }
+
+  # add asterix in the last column if result is significant:
+  significance <- " "
+  if (p <= 0.05){
+    significance <- " * "
+  }
+
+  # placeholders for test statistics of
+  # Wilcoxon signed-rank tests & t-tests:
+  W <- " "
+  T_val <- " "
+
+  # combine values to row and put into results df:
+  ANOVA_rts <- as.data.frame(rbind(ANOVA_rts,
+                                   cbind(test_name, comparison,
+                                         F_val, W, T_val,
+                                         degrees_of_freedom,
+                                         p, significance)))
+
+  # if the ANOVA was significant & we need to use nonparametrical tests...
+  if (p <= 0.05 & rank_transform_data){ # loop post-hoc comparisons
+
+    # run post-hoc Wilcoxon signed-rank tests
+    # for all noise level combinations
+
+    # Idea: We always compare 2 groups, so loop all noise levels
+    # to get group 1, but leave out the last block (group 1 can't be
+    # the last block or else there's nothing left to be compared with)
+    # and exclude control block.
+    # To get group 2, we have to loop all noise levels
+    # that haven't been group 1 (aka all that are left).
+
+    # loop noise levels, leave out control block & last block:
+    for (i in 1:(length(noise_levels)-2)){ # loop noise levels
+
+      # get group 1:
+      group_1 <- noise_levels[i]
+
+      # take all levels that are left except for the control block
+      # control block = last noise level
+      comp_groups <- noise_levels[(i+1):(length(noise_levels)-1)]
+
+      for (group_2 in comp_groups){ # loop groups for group 2
+
+        # run Wilcoxon signed-rank test and save result in "wilc":
+        wilc <- wilcox.test(as.numeric(unlist(subset(all_rts, Block == group_1)[idx_sifi])),
+                            as.numeric(unlist(subset(all_rts, Block == group_2)[idx_sifi])),
+                            alternative = "two.sided", # two sided test
+                            paired = T, # paired sample
+                            exact = F)
+
+        # create test name:
+        test_name <- "       Wilcoxon signed-rank test"
+        # create description of comparison:
+        comparison <- paste("     ", as.character(sifi_name), "in", as.character(group_1),
+                            "vs.", as.character(group_2),
+                            sep = " ")
+        # get p value:
+        # Bonferroni correction: multiply p by 28 because there are 28 pairs
+        p <- round(as.numeric(wilc$p.value)*28, digits = 3)
+
+        # get test statistic W:
+        W <- round(as.numeric(wilc$statistic), digits = 3)
+
+        # placeholders for degrees of freedom &
+        # test statistic of t-Test & ANOVA:
+        T_val <- " "
+        degrees_of_freedom <- " "
+
+        # add asterix in the last column if result is significant:
+        significance <- " "
+        if (p <= 0.05){
+          significance <- " * "
+        }
+
+        # combine values to row and put into results df:
+        ANOVA_rts <- as.data.frame(rbind(ANOVA_rts,
+                                         cbind(test_name, comparison,
+                                               F_val, W, T_val,
+                                               degrees_of_freedom,
+                                               p, significance)))
+      } # End loop groups for group 2
+    } # End loop noise levels
+
+    # if the ANOVA was significant and we need parametrical tests:
+  } else if (p <= 0.05 & !rank_transform_data){
+
+    # run post-hoc t-tests for all noise level combinations
+
+    # Idea: We always compare 2 groups, so loop all noise levels
+    # to get group 1, but leave out the last block (group 1 can't be
+    # the last block or else there's nothing left to be compared with)
+    # and exclude control block.
+    # To get group 2, we have to loop all noise levels
+    # that haven't been group 1 (aka all that are left).
+
+    # loop noise levels, leave out control block & last block:
+    for (i in 1:(length(noise_levels)-2)){ # loop noise levels
+
+      # get group 1:
+      group_1 <- noise_levels[i]
+
+      # take all levels that are left except for the control block
+      # control block = last noise level
+      comp_groups <- noise_levels[(i+1):(length(noise_levels)-1)]
+
+      for (group_2 in comp_groups){ # loop groups for group 2
+
+        # run t-test and save results in "ttest":
+        ttest <- t.test(as.numeric(unlist(subset(all_rts, Block == group_1)[idx_sifi])),
+                        as.numeric(unlist(subset(all_rts, Block == group_2)[idx_sifi])),
+                        alternative = "two.sided", # two sided test
+                        paired = T, # paired sample
+                        exact = F)
+
+        # save p-value and test statistic to results df
+        # create test name:
+        test_name <- "       t-test"
+
+        # create description of comparison:
+        comparison <- paste("     ", as.character(sifi_name), "in", as.character(group_1),
+                            "vs.", as.character(group_2),
+                            sep = " ")
+
+        # get degrees of freedom (df):
+        degrees_of_freedom <- as.character(round(as.numeric(ttest$parameter), digits = 3))
+
+        # get test statistic T:
+        T_val <- round(as.numeric(ttest$statistic), digits = 3)
+
+        # get p-value:
+        # Bonferroni correction: Multiply with 28 as there are 28 pairs
+        p <- round(as.numeric(ttest$p.value)*28, digits = 3)
+
+        # add asterix in the last column if result is significant:
+        significance <- " "
+        if (p <= 0.05){
+          significance <- " * "
+        }
+
+        # add placeholders for test statistics of
+        # Wilcoxon signed-rank tests & ANOVA:
+        W <- " "
+        F_val <- " "
+
+        # combine values to row and put into results df:
+        ANOVA_rts <- as.data.frame(rbind(ANOVA_rts,
+                                         cbind(test_name, comparison,
+                                               F_val, W, T_val,
+                                               degrees_of_freedom,
+                                               p, significance)))
+      } # End loop groups for groups 2
+    } # End loop noise levels
+  } # End loop post-hoc comparisons
+} # End loop sifi conditions & responses
+
+# clean up a little
+rm(idx_sifi, sifi_name, lillie_res,
+   tmp_df, group_1, group_2, comp_groups,
+   i, test_name, comparison, W,
+   degrees_of_freedom, p, significance,
+   levene_data, levene_df, levene_F, levene_p,
+   mauchlys_p, mauchlys_W, all_responses_names,
+   b, c, df, F_val, p_val, resp, wilc, anova_res,
+   allresp, blocks, comp, cond, T_val)
+
+# The results for the comparisons of reaction times in each
+# block are in "ANOVA_rts".
+# View(ANOVA_rts)
+
+# The results for the levene tests are in levene_res:
+# View(levene_res)
+
+# The results for mauchly's tests are in mauchlys_res:
+# View(mauchlys_res)
+
+
+##---- 6.3 Linear or quadratic model? ----
+
+# Let's pretend the noise steps are ordinal scaled to check for quadratic trend along the noise steps
 A2V1_noise <- subset(A2V1[A2V1$Block != "main baseline +noise+",], select = c(A2V1,Block,ID))
 
-# Linear model
+# 6.3.1 Linear model
 A2V1_noise$BlockN <- as.numeric(A2V1_noise$Block)
 lmer1 <- lme(fixed=A2V1 ~ BlockN, random=~1|ID, data = A2V1_noise)
 anova(lmer1)
 
-# Quadratic Model
+# 6.3.2 Quadratic Model
 A2V1_noise$BlockN2 <- A2V1_noise$BlockN^2
 lmer2 <- lme(fixed=A2V1 ~ BlockN + BlockN2, random=~1|ID, data = A2V1_noise)
 anova(lmer2)
@@ -238,8 +954,435 @@ anova(lmer2)
 A2V1s <- spread(A2V1,Block,A2V1)
 write.csv(A2V1s,file = "A2V1_Table.csv")
 
-## 7. Plots
-# TO DO:
-# - MAKE NICE SCATTER + MEAN + SD PLOTS FOR RELEVANT EFFECTS (TO BE DETERMINED BASED ON THE ANOVAS)
 
-plot(A2V1 ~ Block, data = A2V1)
+
+
+##---- 7. Plots ----
+
+# Get packages
+packages <- c("reshape2", # for reshaping dfs
+              "doBy", # for summarizing data
+              "stringr", # for getting substrings
+              "tidyr", # for gather() function
+              # those are for the rainclouds:
+              "ggplot2", "dplyr",  "plyr", "bitops",
+              "cowplot", "lavaan", "readr", "smooth",
+              "rmarkdown", "Hmisc", "caTools")
+
+# install packages if they're not installed yet:
+not_installed <- setdiff(packages, rownames(installed.packages()))
+
+if (length(not_installed) > 0) {
+  install.packages(not_installed)
+}
+
+require("reshape2")
+require("doBy")
+require("stringr")
+require("ggplot2")
+require("dplyr")
+require("plyr")
+require("bitops")
+require("cowplot")
+require("lavaan")
+require("readr")
+require("smooth")
+require("rmarkdown")
+require("Hmisc")
+require("caTools")
+
+
+##---- 7.1 Summarize data ----
+##---- 7.1.1 Change structure of dataframes ----
+
+# get dataframes we want to summarize:
+all_rs <- list(all_r0, all_r1, all_r2) # response rates
+all_rts <- list(all_rt0, all_rt1, all_rt2) # reaction times
+
+# build placeholders for the reshaped dfs:
+all_responses_rts <- data.frame()
+all_responses_resprates <- data.frame()
+
+# reshape dfs:
+for (i in 1:3){ # loop dataframes all_rs & all_rts
+
+  tmp_resps <- all_rs[[i]] # get current dataframe w/ response rates
+  tmp_rts <- all_rts[[i]] # get current dataframe w/ reaction times
+
+  # first for the response rates:
+  # get vector with responses for response rates dfs & append it:
+  Response <- c(rep(i-1, times = length(tmp_resps[1])))
+  # append to df
+  tmp_resps <- as.data.frame(cbind(Response, tmp_resps))
+  # reshape to long format
+  data_resp_long <- gather(tmp_resps, Condition, Response_Rate, A0V1:A2V2, factor_key = TRUE)
+  # save in all_responses_resprates
+  all_responses_resprates <- rbind(all_responses_resprates, data_resp_long)
+
+  # Again for the reaction times:
+  # create vector with response number
+  Response <- c(rep(i-1, times = length(tmp_rts[1])))
+  # append to df
+  tmp_rts <- as.data.frame(cbind(Response, tmp_rts))
+  # reshape to long format
+  data_rts_long <- gather(tmp_rts, Condition, RT, A0V1:A2V2, factor_key = TRUE)
+  # save in all_responses_rts
+  all_responses_rts <- rbind(all_responses_rts, data_rts_long)
+
+} # End loop dataframes
+
+# exclude control block:
+all_responses_rts <- subset(all_responses_rts, Block != "Kontrollblock loop +noise+")
+all_responses_resprates <- subset(all_responses_resprates, Block != "Kontrollblock loop +noise+")
+
+# rename noise levels
+new_levels <- list("1" = "main +noise+ condition1",
+                   "2" = "main +noise+ condition2",
+                   "3" = "main +noise+ condition3",
+                   "4" = "main +noise+ condition4",
+                   "5" = "main +noise+ condition5",
+                   "6" = "main +noise+ condition6",
+                   "7" = "main +noise+ condition7",
+                   "BL" = "main baseline +noise+")
+
+levels(all_responses_rts$Block) <- new_levels
+levels(all_responses_resprates$Block) <- new_levels
+
+# Look at the reshaped datasets:
+#View(all_responses_rts)
+#View(all_responses_resprates)
+
+
+##---- 7.1.2 Summarize the data ----
+
+# Summarize response rates...
+# ...divided by Block, Condition & Response:
+summary_resps1 <- summaryBy(Response_Rate ~ Block + Condition + Response,
+                           data = all_responses_resprates,
+                           FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                                 SD = round(sd(x, na.rm = T), digits = 3),
+                                                 N = length(x)) })
+
+# ...divided by Condition & Response:
+summary_resps2 <- summaryBy(Response_Rate ~ Condition + Response,
+                           data = all_responses_resprates,
+                           FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                                 SD = round(sd(x, na.rm = T), digits = 3),
+                                                 N = length(x)) })
+
+# ...divided by Block:
+summary_resps3 <- summaryBy(Response_Rate ~ Block,
+                            data = all_responses_resprates,
+                            FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                                  SD = round(sd(x, na.rm = T), digits = 3),
+                                                  N = length(x)) })
+
+# ...divided by Block & Condition:
+summary_resps4 <- summaryBy(Response_Rate ~ Block + Condition,
+                            data = all_responses_resprates,
+                            FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                                  SD = round(sd(x, na.rm = T), digits = 3),
+                                                  N = length(x)) })
+
+# Summarize reaction times (RTs)...
+# ...divided by Block, Condition & Response:
+summary_rts1 <- summaryBy(RT ~ Block + Condition + Response,
+               data = all_responses_rts,
+               FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                     SD = round(sd(x, na.rm = T), digits = 3),
+                                     N = length(x)) })
+# ...divided by Condition & Response:
+summary_rts2 <- summaryBy(RT ~ Condition + Response,
+                         data = all_responses_rts,
+                         FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                               SD = round(sd(x, na.rm = T), digits = 3),
+                                               N = length(x)) })
+
+# ...divided by Block:
+summary_rts3 <- summaryBy(RT ~ Block,
+                          data = all_responses_rts,
+                          FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                                SD = round(sd(x, na.rm = T), digits = 3),
+                                                N = length(x)) })
+
+# ...divided by Block & Condition:
+summary_rts4 <- summaryBy(RT ~ Block + Condition,
+                          data = all_responses_rts,
+                          FUN = function(x) { c(M = round(mean(x, na.rm = T), digits = 3),
+                                                SD = round(sd(x, na.rm = T), digits = 3),
+                                                N = length(x)) })
+
+
+##---- 7.2 Plot sign. effects ----
+
+# 7.2.1 Plot settings ----
+# Set up flat violin function in ggplot ----
+# This part is from Tom Rhys Marshall's Github page:
+# https://github.com/RainCloudPlots/RainCloudPlots/blob/master/tutorial_R/R_rainclouds.R
+
+"%||%" <- function(a, b) {
+  if (!is.null(a)) a else b
+}
+
+geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
+                             position = "dodge", trim = TRUE, scale = "area",
+                             show.legend = NA, inherit.aes = TRUE, ...) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = stat,
+    geom = GeomFlatViolin,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      trim = trim,
+      scale = scale,
+      ...
+    )
+  )
+}
+
+GeomFlatViolin <-
+  ggproto("GeomFlatViolin", Geom,
+          setup_data = function(data, params) {
+            data$width <- data$width %||%
+              params$width %||% (resolution(data$x, FALSE) * 0.9)
+
+            # ymin, ymax, xmin, and xmax define the bounding rectangle for each group
+            data %>%
+              group_by(group) %>%
+              mutate(
+                ymin = min(y),
+                ymax = max(y),
+                xmin = x,
+                xmax = x + width / 2
+              )
+          },
+
+          draw_group = function(data, panel_scales, coord) {
+            # Find the points for the line to go all the way around
+            data <- transform(data,
+                              xminv = x,
+                              xmaxv = x + violinwidth * (xmax - x)
+            )
+
+            # Make sure it's sorted properly to draw the outline
+            newdata <- rbind(
+              plyr::arrange(transform(data, x = xminv), y),
+              plyr::arrange(transform(data, x = xmaxv), -y)
+            )
+
+            # Close the polygon: set first and last point the same
+            # Needed for coord_polar and such
+            newdata <- rbind(newdata, newdata[1, ])
+
+            ggplot2:::ggname("geom_flat_violin", GeomPolygon$draw_panel(newdata, panel_scales, coord))
+          },
+
+          draw_key = draw_key_polygon,
+
+          default_aes = aes(
+            weight = 1, colour = "grey20", fill = "white", size = 0.5,
+            alpha = NA, linetype = "solid"
+          ),
+
+          required_aes = c("x", "y")
+  )
+
+
+# 7.2.2 Raincloud plots ----
+
+# 7.2.2.1 For the reaction times - plot data from all_responses_rts:
+
+# save descriptions of all significant post-hoc differences in a vector
+pos_sign_effect <- which(ANOVA_rts$significance == " * " &
+                         ANOVA_rts$test_name != "       Wilcoxon signed-rank test" &
+                         ANOVA_rts$test_name != "       t-test")
+
+# set custom colors (set as many colors as clouds):
+custom_col <- c("#969cc8", "#e1eedf", "#d7e9d5", "#cde3ca",
+                "#c3dec0", "#b9d8b5", "#afd3ab", "#9CC896")
+
+for(pos in pos_sign_effect){ # loop positions of found effects
+
+  # get condition name from comparison description:
+  sifi_cond <- str_sub(ANOVA_rts[pos, 2], 21, -1)
+
+  # get data for sifi_cond:
+  # @ Julian: What do we do about NAs (e.g. if someone didn't
+  # perceive the 2 flashes in A2V1 in a certain block,
+  # there'll be an NA in the df)
+
+  # for now, I'll "exclude" all NA trials from the plot
+  tmp_rts <- subset(all_responses_rts,
+                    Condition == sifi_cond &
+                    !is.na(RT))
+
+  # change order of the noise levels:
+  tmp_rts$Block <- factor(tmp_rts$Block, levels = c("BL", "1", "2",
+                                                    "3", "4", "5", "6", "7"))
+  # Create raincloud plot:
+  plot <-  ggplot(tmp_rts, aes(x = Block,
+                               y = RT,
+                               fill = Block)) +
+           # add violins (aka the cloud):
+           geom_flat_violin(position = position_nudge(x = .25, y = 0), # push violins a little off center
+                            adjust = .7, # smoothing of the density curve
+                            alpha = 1, # opacity of the density curve
+                            trim = T) + # cut off violins at the ends
+           # add scatter points (aka the rain):
+           geom_point(position = position_jitter(width = .15, height = 0), # jitter, so points don't overlap
+                      shape = 21, # just dots as shape
+                      size = 1) + # set point size here
+           # add boxplot:
+           geom_boxplot(aes(x = Block, y = RT),
+                        position = position_nudge(x = .25, y = 0), # move it up a little
+                        outlier.shape = NA, # don't mark outliers
+                        alpha = 0.3, # set opacity of boxplot fill color
+                        width = .1, # set width of box
+                        colour = "BLACK") +
+           # add axes titles:
+           ylab("reaction time in ms") +
+           xlab("noise level") +
+           # change scaling & ticks of y-axis (actually the x-axis
+           # because we turn the plot around):
+           scale_y_continuous(breaks = seq(from = 0,
+                                           to = 1600,
+                                           by = 200),
+                              limits = c(0, 1700)) +
+           # change padding under the first cloud so the
+           # points don't touch the axis:
+           scale_x_discrete(expand = c(0.03, .5)) +
+           # flip the violins so they're horizontal:
+           coord_flip() +
+           # use cowplot theme:
+           theme_cowplot() +
+           # don't use different point styles
+           guides(fill = FALSE, colour = FALSE) +
+           # set colors with color palette:
+           #scale_colour_brewer(palette = "Dark2") + # border color
+           #scale_fill_brewer(palette = "Dark2") + # fill color
+           # set colors manually:
+           scale_color_manual(values = custom_col) +
+           scale_fill_manual(values = custom_col) +
+           # set title
+           ggtitle(sifi_cond)
+
+  # assign name to plot:
+  assign(paste("plot_RTs", sifi_cond, sep = "_"),
+         plot)
+
+  # you can also save the plot, just fill in the missing details:
+  #ggsave("set_path_here", width = w, height = h)
+
+} # END loop positions of found effects
+
+
+# 7.2.2.2 For the response rates - plot data from all_responses_resprates:
+
+# save descriptions of all significant post-hoc differences in a vector
+pos_sign_effect <- which(ANOVA_resp$significance == " * " &
+                         ANOVA_resp$test_name != "       Wilcoxon signed-rank test")
+
+# set custom colors (set as many colors as clouds):
+custom_col <- c("#969cc8", "#f7ddb4", "#f5d4a1", "#f3cc8e",
+                "#f1c37c", "#efbb69", "#edb256", "#ecaa44")
+
+for(pos in pos_sign_effect){ # loop positions of found effects
+
+  # get condition name from comparison description:
+  sifi_cond <- str_sub(ANOVA_resp[pos, 2], 21, -19)
+
+  # get response:
+  response <- str_sub(ANOVA_resp[pos, 2], -1, -1)
+
+  # get data for sifi_cond & response:
+  tmp_resps <- subset(all_responses_resprates,
+                      Condition == sifi_cond &
+                      Response == response)
+
+  # change order of the noise levels:
+  tmp_resps$Block <- factor(tmp_resps$Block, levels = c("BL", "1", "2",
+                                                        "3", "4", "5", "6", "7"))
+
+  # Create raincloud plot:
+  plot <- ggplot(tmp_resps, aes(x = Block,
+                                y = Response_Rate,
+                                fill = Block)) +
+          # add violins (aka the cloud):
+          geom_flat_violin(position = position_nudge(x = .25, y = 0), # push violins a little off center
+                           adjust = .7, # smoothing of the density curve
+                           alpha = 1, # opacity of the density curve
+                           trim = T) + # cut off violins at the ends
+          # add scatter points (aka the rain):
+          geom_point(position = position_jitter(width = 0.2, height = 0),# jitter, so points don't overlap completely
+                     shape = 16, # use simple dots as shape
+                     alpha = .4, # opacity
+                     size = 2) + # set point size here
+          # add boxplot:
+          geom_boxplot(aes(x = Block, y = Response_Rate),
+                       position = position_nudge(x = .25, y = 0), # move it up a little
+                       outlier.shape = NA, # don't mark outliers
+                       alpha = 0.3, # set opacity of boxplot fill color
+                       width = .1, # set width of box
+                       colour = "BLACK") +
+          # add axes titles:
+          ylab("response rate") +
+          xlab("noise level") +
+          # change padding under the first cloud so the
+          # points don't touch the axis:
+          scale_x_discrete(expand = c(0.03, .5)) +
+          # change position of ticks on y-axis so they're
+          # aligned with the bottom of the density plot
+          theme(axis.text.y = element_text(hjust = 0.4, vjust = 0.3)) +
+          # flip the violins so they're horizontal:
+          coord_flip() +
+          # use cowplot theme:
+          theme_cowplot() +
+          # don't show legend:
+          guides(fill = F, colour = F) +
+          # set colors with color palette:
+          #scale_colour_brewer(palette = "Dark2") + # border color
+          #scale_fill_brewer(palette = "Dark2") + # fill color
+          # set colors manually:
+          scale_color_manual(values = custom_col) +
+          scale_fill_manual(values = custom_col) +
+          # set title
+          ggtitle(paste("Response Rates in ", sifi_cond, ", response = ", response, sep = ""))
+
+  # assign name to plot:
+  assign(paste("plot_", sifi_cond, "_resp_", response, sep = ""), plot)
+
+  # you can also save the plot, just fill in the missing details:
+  #ggsave("set_path_here", width = w, height = h)
+
+} # END loop positions of found effects  
+
+# clean up
+rm(plot, not_installed, noise_levels,
+   packages, pos, pos_sign_effect,
+   rank_transform_data, response,
+   Response, sifi_cond)
+
+
+# 7.2.3 Show plots!
+
+# Put everything into one figure:
+
+# Sometimes it takes too long to draw the plots,
+# so if you don't see all plots, run this part again
+# until it works!
+
+# Plots for the RTs:
+all_plots_RTs <- plot_grid(plot_RTs_A0V1, plot_RTs_A1V0,
+                           plot_RTs_A1V1, plot_RTs_A1V2,
+                           plot_RTs_A2V0, plot_RTs_A2V1late,
+                           labels = c("A", "B",
+                                      "C", "D",
+                                      "E", "F"),
+                           ncol = 2, nrow = 3)
+all_plots_RTs
+
+# Plots for the response rates (there's only one actually):
+plot_A2V1_resp_2
