@@ -232,7 +232,7 @@ for(i in 1:length(VP_data)) {
 # Get packages
 
 packages <- c("emmeans", "nlme", "tidyr", "DescTools",
-              "nortest",  "car", "rstatix","gdata")
+              "nortest",  "car", "rstatix","gdata","DescTools")
 
 # install packages if they're not installed yet:
 not_installed <- setdiff(packages, rownames(installed.packages()))
@@ -249,6 +249,7 @@ require(nortest) # for lilliefors tests
 require(car) # for levene tests
 require(rstatix) # for anova_test function
 require(gdata) # for cleaning up
+require(DescTools)
 
 ##---- 6.1 Test normality of distribution ----
 ##---- 6.1.1 Lilliefors-Test: Normality of distribution - Response rates: ----
@@ -333,7 +334,7 @@ rm(lillie, lillie_result, lillie_results_df)
 # If there's an NA for D and p, it means that there were
 # only identical values in the tested group.
 # If p = 0 it means p < 0.001
-# View(lillie_results_df)
+# View(lillie_all_resp)
 
 
 ##---- 6.1.2 Lilliefors-Test: Normality of distribution - Reaction times: ----
@@ -414,7 +415,7 @@ rm(lillie, lillie_result, lillie_results_df,
 # If there's an NA for D and p, it means that there were
 # only identical values in the tested group.
 # If p = 0 it means p < 0.001
-# View(lillie_results_df)
+# View(lillie_all_rts)
 
 ##---- 6.2 ANOVAs & post hoc comparisons ----
 
@@ -476,7 +477,7 @@ for (idx_sifi in 1:length(sifi_conds)){ # loop sifi conditions & responses
 
     # rank transform response rates:
     tmp_df$rank_data <- rank(tmp_df[1])
-
+    
     # run ANOVA on new column with the transformed data:
 
     # anova_test() is a wrapper around the Anova() and aov() functions
@@ -485,6 +486,9 @@ for (idx_sifi in 1:length(sifi_conds)){ # loop sifi conditions & responses
     # so we use this one instead of aov() (sorry Julian):
     anova_res <- anova_test(data = tmp_df,
                             formula = rank_data ~ Block + Error(ID/Block))
+                                                     
+    #aggregate(tmp_df$A2V1,list(Block = tmp_df$Block), mean)
+    #aggregate(tmp_df$A2V1,list(Block = tmp_df$Block), sd)
 
     # create test name:
     test_name <-  "ANOVA (rank transformed)"
@@ -720,6 +724,10 @@ for (idx_sifi in 1:length(sifi_conds)){ # loop sifi conditions
     # use "normal" ANOVA (not rank transformed):
     anova_res <- anova_test(data = tmp_df,
                             formula = unlist(tmp_df[1]) ~ Block + Error(ID/Block))
+                            
+    aggregate(tmp_df$A2V1,list(Block = tmp_df$Block), mean)
+    aggregate(tmp_df$A2V1,list(Block = tmp_df$Block), sd)
+    
     # create test name:
     test_name <-  "ANOVA"
 
@@ -948,25 +956,25 @@ rm(idx_sifi, sifi_name, lillie_res,
 
 
 ##---- 6.3 Linear or quadratic model? ----
-
 # Let's pretend the noise steps are ordinal scaled to check for quadratic trend along the noise steps
-A2V1_noise <- subset(A2V1[A2V1$Block != "main baseline +noise+",], select = c(A2V1,Block,ID))
+A2V1_noise <- tmp_df # get this from line 472 with idx_sifi = 7
 
 # 6.3.1 Linear model
 A2V1_noise$BlockN <- as.numeric(A2V1_noise$Block)
-lmer1 <- lme(fixed=A2V1 ~ BlockN, random=~1|ID, data = A2V1_noise)
+lmer1 <- lme(fixed=rank_data ~ BlockN, random=~1|ID/BlockN, data = A2V1_noise)
 anova(lmer1)
+summary(lmer1)
 
 # 6.3.2 Quadratic Model
 A2V1_noise$BlockN2 <- A2V1_noise$BlockN^2
-lmer2 <- lme(fixed=A2V1 ~ BlockN + BlockN2, random=~1|ID, data = A2V1_noise)
+lmer2 <- lme(fixed=rank_data ~ BlockN + BlockN2, random=~1|ID/BlockN/BlockN2, data = A2V1_noise)
 anova(lmer2)
+summary(lmer2)
+
+AIC(lmer1,lmer2)
 
 # Export for JASP for sanity checks
-A2V1s <- spread(A2V1,Block,A2V1)
-write.csv(A2V1s,file = "A2V1_Table.csv")
-
-
+write.csv(A2V1_noise,file = "A2V1_Table.csv")
 
 
 ##---- 7. Plots ----
@@ -1279,7 +1287,7 @@ for(pos in pos_sign_effect){ # loop positions of found effects
            scale_color_manual(values = custom_col) +
            scale_fill_manual(values = custom_col) +
            # set title
-           ggtitle(sifi_cond)
+           ggtitle(paste("Median reaction times"))
 
   # assign name to plot:
   assign(paste("plot_RTs", sifi_cond, sep = "_"),
@@ -1289,7 +1297,9 @@ for(pos in pos_sign_effect){ # loop positions of found effects
   #ggsave("set_path_here", width = w, height = h)
 
 } # END loop positions of found effects
-
+pdf(file = "Exp2_MedianRTs.pdf", width = 10, height = 10)
+plot
+dev.off()
 
 # 7.2.2.2 For the response rates - plot data from all_responses_resprates:
 
@@ -1340,7 +1350,7 @@ for(pos in pos_sign_effect){ # loop positions of found effects
                        width = .1, # set width of box
                        colour = "BLACK") +
           # add axes titles:
-          ylab("response rate") +
+          ylab("illusion rate") +
           xlab("noise level") +
           # change padding under the first cloud so the
           # points don't touch the axis:
@@ -1361,8 +1371,8 @@ for(pos in pos_sign_effect){ # loop positions of found effects
           scale_color_manual(values = custom_col) +
           scale_fill_manual(values = custom_col) +
           # set title
-          ggtitle(paste("Response Rates in ", sifi_cond, ", response = ", response, sep = ""))
-
+          #ggtitle(paste("Response Rates in ", sifi_cond, ", response = ", response, sep = ""))
+		  ggtitle(paste("Performance in the SIFI"))
   # assign name to plot:
   assign(paste("plot_", sifi_cond, "_resp_", response, sep = ""), plot)
 
@@ -1370,6 +1380,9 @@ for(pos in pos_sign_effect){ # loop positions of found effects
   #ggsave("set_path_here", width = w, height = h)
 
 } # END loop positions of found effects  
+pdf(file = "Exp2_Illrates.pdf", width = 10, height = 10)
+plot
+dev.off()
 
 # clean up
 rm(plot, not_installed, noise_levels,

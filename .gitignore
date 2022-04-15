@@ -1,4 +1,5 @@
 /01_data/00_RawData/*
 /02_Code/01_Analysis/Old/*
+/03_Text/Old/*
 .DS_Store
 .Rapp.history
