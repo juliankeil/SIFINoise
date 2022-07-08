@@ -13,7 +13,7 @@
 
 ##---- 1. Get Data ----
 # 1.1 Set Working Directors
-setwd('/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Fertig/Zimmermann/SIFINoise_Git/01_Data/01_ProcessedData/')
+setwd('/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Fertig/Zimmermann/SIFINoise_Git/01_Data/01_ProcessedData/02_SIFI/')
 #setwd("/Users/merle/Desktop/Arbeit/HiWi/Experimente/Ida Zimmermann")
 load('VP_data.rda')
 
